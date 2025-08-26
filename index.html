@@ -144,7 +144,7 @@
     <section class="card center">
       <div class="compass">
         <!-- Cadran -->
-        <svg class="dial" viewBox="0 0 100 100" aria-hidden="true">
+        <svg class="dial" id="dial" viewBox="0 0 100 100" aria-hidden="true">
           <defs>
             <radialGradient id="g" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stop-opacity="0.0" />
@@ -253,6 +253,7 @@ const els = {
   gotoSelect: document.getElementById('goto'),
   cardGoto: document.getElementById('cardGoto'),
   titleGoto: document.getElementById('titleGoto'),
+  dial: document.getElementById('dial'),
 };
 
 const state = {
@@ -308,6 +309,7 @@ function tick() {
     els.dist.textContent = '—';
     els.bear.textContent = '—';
     rotateArrow(0);
+    dial.style.transform = 'rotate(0deg)';
     return;
   }
   if (!p) {
@@ -315,18 +317,13 @@ function tick() {
     return;
   }
 
-  // Distance & bearing absolu (Nord->cible)
   const d = haversine(p.lat, p.lng, t.lat, t.lng);
-  const brg = bearingTo(p.lat, p.lng, t.lat, t.lng); // 0..360
+  const brg = bearingTo(p.lat, p.lng, t.lat, t.lng);
   els.dist.textContent = fmtDistance(d);
 
-  // Choisir une source de cap:
-  // 1) DeviceOrientation (compas) si dispo
-  // 2) sinon heading GPS (si le user se déplace)
-  // 3) sinon pas de cap (flèche pointe vers le haut avec indication absolue)
   let heading = null;
   if (state.deviceHeading != null) {
-    heading = state.deviceHeading; // Nord magnétique/absolu -> dépend du device
+    heading = state.deviceHeading;
     state.headingSource = 'compas (orientation)';
   } else if (p.headingFromGPS != null) {
     heading = p.headingFromGPS;
@@ -336,18 +333,23 @@ function tick() {
   }
   els.headingSource.textContent = state.headingSource;
 
-  let rel = brg; // Par défaut, flèche = bearing absolu
+  let rel = brg;
   if (heading != null) {
-    // cap relatif = vers la cible - là où regarde l'appareil
     rel = (brg - heading + 360) % 360;
     els.status.innerHTML = '<span class="ok">Orientation active.</span>';
   } else {
-    els.status.innerHTML = '<span class="warn">Orientation indisponible : la flèche indique le Nord → cible.</span>';
+    els.status.innerHTML = '<span class="warn">Orientation indisponible.</span>';
   }
 
   els.bear.textContent = `${Math.round(rel)}°`;
-  // L'arrow pointe "vers le haut" = 0°, donc on applique la rotation relative
   rotateArrow(rel);
+
+  // Faire tourner le cadran dans le sens inverse du heading
+  if (heading != null) {
+    dial.style.transform = `rotate(${heading}deg)`; // inverse car on veut que N reste fixe
+  } else {
+    dial.style.transform = 'rotate(0deg)';
+  }
 }
 
 /* ------------------ Géolocalisation ------------------- */
