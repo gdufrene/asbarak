@@ -346,7 +346,8 @@ function tick() {
 
   // Faire tourner le cadran dans le sens inverse du heading
   if (heading != null) {
-    dial.style.transform = `rotate(${heading}deg)`; // inverse car on veut que N reste fixe
+    var relHeading = Math.round((360 - heading) % 360);
+    dial.style.transform = `rotate(${relHeading}deg)`; // inverse car on veut que N reste fixe
   } else {
     dial.style.transform = 'rotate(0deg)';
   }
