@@ -117,7 +117,7 @@
             <option></option>
             <option>LFQO</option>
             <option>LFQT</option>
-            <option>EBSG</option>
+            <option>EBAM</option>
           </select>
         </div>
         <div>
@@ -145,19 +145,13 @@
       <div class="compass">
         <!-- Cadran -->
         <svg class="dial" id="dial" viewBox="0 0 100 100" aria-hidden="true">
-          <defs>
-            <radialGradient id="g" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-opacity="0.0" />
-              <stop offset="100%" stop-opacity="0.15" />
-            </radialGradient>
-          </defs>
-          <circle cx="50" cy="50" r="49" fill="url(#g)" stroke="#334155" stroke-width="1" />
+          <circle cx="50" cy="50" r="49" fill="url(#g)" stroke="#334155" stroke-width="2" />
           <!-- Marques cardinales -->
-          <g font-size="6" text-anchor="middle" fill="#94a3b8" font-family="system-ui, -apple-system, Segoe UI, Roboto">
-            <text x="50" y="8">N</text>
-            <text x="50" y="98">S</text>
-            <text x="4" y="53">O</text>
-            <text x="96" y="53">E</text>
+          <g font-size="10" text-anchor="middle" fill="#94a3b8" font-family="system-ui, -apple-system, Segoe UI, Roboto">
+            <text x="50" y="10" fill="#FF3333">N</text>
+            <text x="50" y="96">S</text>
+            <text x="6" y="53">O</text>
+            <text x="94" y="53">E</text>
           </g>
         </svg>
 
@@ -165,11 +159,11 @@
         <svg class="arrow" id="arrow" viewBox="0 0 100 100" role="img" aria-label="Direction vers la cible">
           <g transform="translate(50,50)">
             <!-- tige -->
-            <rect x="-2" y="-34" width="4" height="40" rx="2" />
+            <rect x="-2" y="-34" width="4" height="40" rx="2" fill="#333333"/>
             <!-- tête -->
-            <polygon points="0,-44 8,-28 -8,-28" />
+            <polygon points="0,-44 8,-28 -8,-28" fill="#22c55e"/>
             <!-- base -->
-            <rect x="-4" y="6" width="8" height="14" rx="3" opacity="0.35" />
+            <rect x="-4" y="6" width="8" height="14" rx="3" fill="#333333"/>
           </g>
         </svg>
       </div>
@@ -262,6 +256,7 @@ const state = {
   pos: null,           // {lat, lng, acc, headingFromGPS?}
   deviceHeading: null, // 0..360 (Nord=0)
   headingSource: '—',
+  prevRel: null
 };
 
 function asText(t) {
@@ -310,7 +305,14 @@ function fmtDistance(m) {
   return `${(m/1000).toFixed(2)} km`;
 }
 function rotateArrow(deg) {
+  if (state.prevRel != null && Math.abs( state.prevRel - deg ) > 180 ) {
+    els.arrow.style.transition = "none";
+    setTimeout(() => {
+      els.arrow.style.transition = "";
+    }, 250);
+  }
   els.arrow.style.transform = `rotate(${deg}deg)`;
+  state.prevRel = deg;
 }
 
 function tick() {
@@ -508,19 +510,19 @@ tick();
 
 const locations = {
   "LFQO": {
-    "title": "Lille-Marcq 122.005"
+    "title": "Lille-Marcq 122.005",
     "lat": 50.68738062445483, 
     "lng": 3.0758446508751898,
     "alt": 21
   },
   "LFQT": {
-    "title": "Merville 119.075"
+    "title": "Merville 119.075",
     "lat": 50.624371484196914, 
     "lng": 2.652046011970748,
     "alt": 19
   },
   "EBAM": {
-    "title": "Amougies 119.755"
+    "title": "Amougies 119.755",
     "lat": 50.740006842888285, 
     "lng": 3.4850285828799477,
     "alt": 23
