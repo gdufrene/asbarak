@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Asbarak</title>
+
+  <!-- Couleurs PWA -->
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Manifest PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+
+  <!-- Styles minimalistes -->
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;          /* slate-900 */
+      --fg: #e2e8f0;          /* slate-200 */
+      --muted: #94a3b8;       /* slate-400 */
+      --accent: #22c55e;      /* green-500 */
+      --card: #111827;        /* gray-900 */
+      --danger: #ef4444;      /* red-500 */
+    }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--bg); color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+    .wrap {
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    header, footer {
+      padding: 12px 16px;
+      background: #0b1220;
+      border-bottom: 1px solid #1f2937;
+    }
+    header h1 { margin: 0; font-size: 18px; display: contents }
+    main {
+      padding: 14px 16px 24px;
+      display: grid;
+      gap: 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .row {
+      display: grid; gap: 10px;
+    }
+    @media (min-width: 520px) {
+      .row.two { grid-template-columns: 1fr 1fr; align-items: end; }
+      .row.three { grid-template-columns: 1fr 1fr auto; align-items: end; }
+    }
+    label { font-size: 12px; color: var(--muted); }
+    input, select {
+      width: 100%; box-sizing: border-box; border-radius: 12px;
+      border: 1px solid #334155; background: #0b1220; color: var(--fg);
+      padding: 10px 12px; font-size: 16px;
+    }
+    input::placeholder { color: #64748b; }
+    button {
+      appearance: none; border: 0; border-radius: 12px;
+      background: var(--accent); color: #04110a;
+      padding: 10px 14px; font-size: 16px; font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: #1f2937; color: var(--fg); }
+    button.danger { background: var(--danger); color: #fff; }
+    .muted { color: var(--muted); }
+    .stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      text-align: center;
+    }
+    .stat {
+      background: #0b1220; border: 1px solid #1f2937; border-radius: 16px; padding: 12px;
+    }
+    .stat .val { font-size: 28px; font-weight: 700; }
+    .center {
+      display: grid; place-items: center; padding: 8px;
+    }
+    .compass {
+      width: 260px; height: 260px; position: relative;
+    }
+    .dial {
+      position: absolute; inset: 0; opacity: .25;
+    }
+    .arrow {
+      position: absolute; inset: 0;
+      transition: transform 120ms linear;
+      will-change: transform;
+    }
+    .warn { font-size: 13px; color: #fbbf24; } /* amber-400 */
+    .ok { color: #86efac; } /* green-300 */
+    .err { color: #fca5a5; } /* red-300 */
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="titleGoto">🧭 Goto >></h1>
+    <span>Lille</span>
+  </header>
+
+  <main>
+    <section class="card" id="cardGoto">
+      <div class="row three" style="gap:12px;">
+        <div>
+          <label for="goto">GOTO</label>
+          <select id="goto">
+            <option></option>
+            <option>LFQO</option>
+            <option>LFQT</option>
+            <option>EBSG</option>
+          </select>
+        </div>
+        <div>
+          <label for="lat">Latitude cible</label>
+          <input id="lat" type="number" step="any" placeholder="ex: 48.858260 (Tour Eiffel)" />
+        </div>
+        <div>
+          <label for="lng">Longitude cible</label>
+          <input id="lng" type="number" step="any" placeholder="ex: 2.294499" />
+        </div>
+        <div>
+          <button id="saveTarget">Enregistrer</button>
+        </div>
+      </div>
+      <div class="row two" style="margin-top:10px;">
+        <button id="useHere" class="secondary">Utiliser ma position comme cible</button>
+        <button id="clearTarget" class="danger">Effacer la cible</button>
+      </div>
+      <p class="muted" style="margin-top:10px;">
+        Astuce : la cible est mémorisée (localStorage). Autorise la géolocalisation et l’orientation pour une précision optimale.
+      </p>
+    </section>
+
+    <section class="card center">
+      <div class="compass">
+        <!-- Cadran -->
+        <svg class="dial" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <radialGradient id="g" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-opacity="0.0" />
+              <stop offset="100%" stop-opacity="0.15" />
+            </radialGradient>
+          </defs>
+          <circle cx="50" cy="50" r="49" fill="url(#g)" stroke="#334155" stroke-width="1" />
+          <!-- Marques cardinales -->
+          <g font-size="6" text-anchor="middle" fill="#94a3b8" font-family="system-ui, -apple-system, Segoe UI, Roboto">
+            <text x="50" y="8">N</text>
+            <text x="50" y="98">S</text>
+            <text x="4" y="53">O</text>
+            <text x="96" y="53">E</text>
+          </g>
+        </svg>
+
+        <!-- Flèche vers la cible -->
+        <svg class="arrow" id="arrow" viewBox="0 0 100 100" role="img" aria-label="Direction vers la cible">
+          <g transform="translate(50,50)">
+            <!-- tige -->
+            <rect x="-2" y="-34" width="4" height="40" rx="2" />
+            <!-- tête -->
+            <polygon points="0,-44 8,-28 -8,-28" />
+            <!-- base -->
+            <rect x="-4" y="6" width="8" height="14" rx="3" opacity="0.35" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="stats" style="margin-top: 16px;">
+        <div class="stat">
+          <div class="muted">Distance</div>
+          <div id="distance" class="val">—</div>
+          <div class="muted" style="font-size:13px;">m / km</div>
+        </div>
+        <div class="stat">
+          <div class="muted">Cap relatif</div>
+          <div id="bearing" class="val">—</div>
+          <div class="muted" style="font-size:13px;">° vers la cible</div>
+        </div>
+      </div>
+
+      <p id="status" class="muted" style="margin-top:12px;">Initialisation…</p>
+      <button id="askOrientation" class="secondary" style="margin-top:8px; display:none;">
+        Autoriser le compas (iOS)
+      </button>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>Paramètres & infos</summary>
+        <ul>
+          <li>Précision geoloc : <span id="acc">—</span></li>
+          <li>Dernière mise à jour : <span id="lastUpdate">—</span></li>
+          <li>Source cap : <span id="headingSource">—</span></li>
+        </ul>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <small class="muted">Fonctionne hors-ligne après la première visite. Installable comme app (menu « Ajouter à l’écran d’accueil »).</small>
+  </footer>
+</div>
+
+<script>
+
+/* ----------------- Utilitaires géo ------------------ */
+const toRad = d => d * Math.PI / 180;
+const toDeg = r => r * 180 / Math.PI;
+
+// Distance haversine (m)
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// Relèvement (bearing) de A vers B (° depuis le Nord)
+function bearingTo(lat1, lon1, lat2, lon2) {
+  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1))*Math.sin(toRad(lat2)) -
+            Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2 - lon1));
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+/* -------------- Éléments & état global -------------- */
+const els = {
+  lat: document.getElementById('lat'),
+  lng: document.getElementById('lng'),
+  save: document.getElementById('saveTarget'),
+  useHere: document.getElementById('useHere'),
+  clear: document.getElementById('clearTarget'),
+  arrow: document.getElementById('arrow'),
+  dist: document.getElementById('distance'),
+  bear: document.getElementById('bearing'),
+  status: document.getElementById('status'),
+  acc: document.getElementById('acc'),
+  last: document.getElementById('lastUpdate'),
+  askOrientation: document.getElementById('askOrientation'),
+  headingSource: document.getElementById('headingSource'),
+  gotoSelect: document.getElementById('goto'),
+  cardGoto: document.getElementById('cardGoto'),
+  titleGoto: document.getElementById('titleGoto'),
+};
+
+const state = {
+  target: null,        // {lat, lng}
+  pos: null,           // {lat, lng, acc, headingFromGPS?}
+  deviceHeading: null, // 0..360 (Nord=0)
+  headingSource: '—',
+};
+
+function saveTarget(t) {
+  localStorage.setItem('target', JSON.stringify(t));
+  state.target = t;
+  els.lat.value = t.lat;
+  els.lng.value = t.lng;
+  tick();
+}
+function loadTarget() {
+  const raw = localStorage.getItem('target');
+  if (raw) {
+    try {
+      const t = JSON.parse(raw);
+      if (typeof t.lat === 'number' && typeof t.lng === 'number') {
+        state.target = t;
+        els.lat.value = t.lat;
+        els.lng.value = t.lng;
+      }
+    } catch {}
+  }
+}
+function clearTarget() {
+  localStorage.removeItem('target');
+  state.target = null;
+  els.lat.value = '';
+  els.lng.value = '';
+  tick();
+}
+
+/* -------------- Mise à jour UI principale ------------- */
+function fmtDistance(m) {
+  if (!isFinite(m)) return '—';
+  if (m < 1000) return `${Math.round(m)} m`;
+  return `${(m/1000).toFixed(2)} km`;
+}
+function rotateArrow(deg) {
+  els.arrow.style.transform = `rotate(${deg}deg)`;
+}
+
+function tick() {
+  const t = state.target;
+  const p = state.pos;
+  if (!t) {
+    els.status.innerHTML = 'Définis une cible pour démarrer.';
+    els.dist.textContent = '—';
+    els.bear.textContent = '—';
+    rotateArrow(0);
+    return;
+  }
+  if (!p) {
+    els.status.innerHTML = 'Recherche de la position…';
+    return;
+  }
+
+  // Distance & bearing absolu (Nord->cible)
+  const d = haversine(p.lat, p.lng, t.lat, t.lng);
+  const brg = bearingTo(p.lat, p.lng, t.lat, t.lng); // 0..360
+  els.dist.textContent = fmtDistance(d);
+
+  // Choisir une source de cap:
+  // 1) DeviceOrientation (compas) si dispo
+  // 2) sinon heading GPS (si le user se déplace)
+  // 3) sinon pas de cap (flèche pointe vers le haut avec indication absolue)
+  let heading = null;
+  if (state.deviceHeading != null) {
+    heading = state.deviceHeading; // Nord magnétique/absolu -> dépend du device
+    state.headingSource = 'compas (orientation)';
+  } else if (p.headingFromGPS != null) {
+    heading = p.headingFromGPS;
+    state.headingSource = 'cap GPS';
+  } else {
+    state.headingSource = '—';
+  }
+  els.headingSource.textContent = state.headingSource;
+
+  let rel = brg; // Par défaut, flèche = bearing absolu
+  if (heading != null) {
+    // cap relatif = vers la cible - là où regarde l'appareil
+    rel = (brg - heading + 360) % 360;
+    els.status.innerHTML = '<span class="ok">Orientation active.</span>';
+  } else {
+    els.status.innerHTML = '<span class="warn">Orientation indisponible : la flèche indique le Nord → cible.</span>';
+  }
+
+  els.bear.textContent = `${Math.round(rel)}°`;
+  // L'arrow pointe "vers le haut" = 0°, donc on applique la rotation relative
+  rotateArrow(rel);
+}
+
+/* ------------------ Géolocalisation ------------------- */
+let watchId = null;
+function startGeo() {
+  if (!('geolocation' in navigator)) {
+    els.status.innerHTML = '<span class="err">Géolocalisation non prise en charge.</span>';
+    return;
+  }
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const { latitude, longitude, accuracy, heading, speed } = pos.coords;
+      state.pos = {
+        lat: latitude, lng: longitude, acc: accuracy,
+        headingFromGPS: (heading != null && heading >= 0 && speed && speed > 0.5) ? heading : null
+      };
+      els.acc.textContent = accuracy ? `${Math.round(accuracy)} m` : '—';
+      els.last.textContent = new Date().toLocaleTimeString();
+      tick();
+    },
+    err => {
+      els.status.innerHTML = `<span class="err">Erreur géoloc : ${err.message}</span>`;
+    },
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+  );
+}
+
+/* ---------------- Orientation (compas) ----------------- */
+function setupOrientation() {
+  // iOS nécessite une permission explicite via user gesture
+  const needBtn = typeof DeviceOrientationEvent !== 'undefined'
+    && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+  if (needBtn) {
+    els.askOrientation.style.display = 'inline-block';
+    els.askOrientation.addEventListener('click', async () => {
+      try {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res === 'granted') {
+          attachOrientation();
+          els.askOrientation.style.display = 'none';
+        } else {
+          els.status.innerHTML = '<span class="warn">Permission orientation refusée.</span>';
+        }
+      } catch (e) {
+        els.status.innerHTML = `<span class="err">Erreur permission orientation : ${e.message}</span>`;
+      }
+    });
+  } else {
+    attachOrientation();
+  }
+}
+
+function attachOrientation() {
+  if (!('DeviceOrientationEvent' in window)) return;
+
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+
+function handleOrientation(e) {
+  // Plusieurs navigateurs fournissent différents champs :
+  // - iOS: webkitCompassHeading (0=N)
+  // - Chrome: absolute=true + alpha (0° = Est côté spec, mais bcp devices mappent au Nord)
+  let heading = null;
+
+  // iOS
+  const anyE = e;
+  if (typeof anyE.webkitCompassHeading === 'number') {
+    heading = anyE.webkitCompassHeading; // 0..360
+  } else if (e.absolute && typeof e.alpha === 'number') {
+    // Alpha absolu: dépend du device; on l'utilise comme approximation du Nord
+    heading = (360 - e.alpha) % 360; // inverser pour obtenir Nord=0 croissant horaire
+  }
+
+  if (heading != null && isFinite(heading)) {
+    state.deviceHeading = (heading + 360) % 360;
+    tick();
+  }
+}
+
+function displayForm(show) {
+  var c = (show === true) ? "block" : "none";
+  els.cardGoto.style.display = c;
+}
+
+function doSave() {
+  const lat = parseFloat(els.lat.value);
+  const lng = parseFloat(els.lng.value);
+  if (!isFinite(lat) || !isFinite(lng)) {
+    els.status.innerHTML = '<span class="err">Coordonnées invalides.</span>';
+    return;
+  }
+  saveTarget({ lat, lng });
+  els.status.innerHTML = '<span class="ok">Cible enregistrée.</span>';
+  displayForm(false);
+}
+
+/* ------------------ UI: handlers ----------------------- */
+els.save.addEventListener('click', doSave);
+
+els.useHere.addEventListener('click', () => {
+  if (!state.pos) {
+    els.status.innerHTML = '<span class="warn">Position actuelle inconnue.</span>';
+    return;
+  }
+  saveTarget({ lat: state.pos.lat, lng: state.pos.lng });
+  els.status.innerHTML = '<span class="ok">Cible = position actuelle.</span>';
+  displayForm(false);
+});
+
+els.clear.addEventListener('click', () => {
+  clearTarget();
+  els.status.innerHTML = 'Cible effacée.';
+  displayForm(false);
+});
+
+els.titleGoto.addEventListener('click', () => {
+  displayForm(true);
+});
+
+els.gotoSelect.addEventListener('change', () => {
+  var to = locations[els.gotoSelect.value];
+  if(to === undefined) return;
+  els.lat.value = to.lat;
+  els.lng.value = to.lng;
+  doSave();
+});
+
+/* ------------------ Service Worker --------------------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration failed', err);
+    });
+  });
+}
+
+/* -------------------- Démarrage ------------------------ */
+loadTarget();
+startGeo();
+setupOrientation();
+tick();
+
+const locations = {
+  "LFQO": {
+    "lat": 50.68738062445483, 
+    "lng": 3.0758446508751898,
+    "alt": 21
+  },
+  "LFQT": {
+    "lat": 50.624371484196914, 
+    "lng": 2.652046011970748,
+    "alt": 19
+  },
+  "EBSG": {
+    "lat": 50.740006842888285, 
+    "lng": 3.4850285828799477,
+    "alt": 23
+  }
+}
+</script>
+</body>
+</html>
