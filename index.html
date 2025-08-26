@@ -254,6 +254,7 @@ const els = {
   cardGoto: document.getElementById('cardGoto'),
   titleGoto: document.getElementById('titleGoto'),
   dial: document.getElementById('dial'),
+  targetName: document.getElementsByTagName("header")[0].getElementsByTagName("span")[0]
 };
 
 const state = {
@@ -263,13 +264,22 @@ const state = {
   headingSource: '—',
 };
 
+function asText(t) {
+  if (!t) return "---";
+  if (t.title) return t.title;
+  return "" + Math.abs(t.lat).toFixed(4) + " " + (t.lat > 0 ? "N" : "S") +
+   Math.abs(t.lng).toFixed(4) + " " + (t.lng > 0 ? "E" : "W");
+}
+
 function saveTarget(t) {
   localStorage.setItem('target', JSON.stringify(t));
   state.target = t;
   els.lat.value = t.lat;
   els.lng.value = t.lng;
+  els.targetName.innerHTML = asText(t);
   tick();
 }
+
 function loadTarget() {
   const raw = localStorage.getItem('target');
   if (raw) {
@@ -279,6 +289,7 @@ function loadTarget() {
         state.target = t;
         els.lat.value = t.lat;
         els.lng.value = t.lng;
+        els.targetName.innerHTML = `${(t.lat).toFixed(4)} N ${(t.lng).toFixed(4)} E`;
       }
     } catch {}
   }
@@ -288,6 +299,7 @@ function clearTarget() {
   state.target = null;
   els.lat.value = '';
   els.lng.value = '';
+  els.targetName.innerHTML = '---';
   tick();
 }
 
@@ -475,9 +487,8 @@ els.titleGoto.addEventListener('click', () => {
 els.gotoSelect.addEventListener('change', () => {
   var to = locations[els.gotoSelect.value];
   if(to === undefined) return;
-  els.lat.value = to.lat;
-  els.lng.value = to.lng;
-  doSave();
+  saveTarget(to);
+  displayForm(false);
 });
 
 /* ------------------ Service Worker --------------------- */
@@ -497,16 +508,19 @@ tick();
 
 const locations = {
   "LFQO": {
+    "title": "Lille-Marcq 122.005"
     "lat": 50.68738062445483, 
     "lng": 3.0758446508751898,
     "alt": 21
   },
   "LFQT": {
+    "title": "Merville 119.075"
     "lat": 50.624371484196914, 
     "lng": 2.652046011970748,
     "alt": 19
   },
-  "EBSG": {
+  "EBAM": {
+    "title": "Amougies 119.755"
     "lat": 50.740006842888285, 
     "lng": 3.4850285828799477,
     "alt": 23
