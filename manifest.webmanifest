@@ -1,12 +1,13 @@
 {
-  "name": "Nav PWA — Direction & Distance",
-  "short_name": "Nav PWA",
+  "name": "Asbarak — Find your fries",
+  "short_name": "Asbarak",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-    ]
+    { "src": "./icons/icons-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icons-512.png", "sizes": "512x512", "type": "image/png" }
+    ],
+  "version": "0.2.8261"
 }
